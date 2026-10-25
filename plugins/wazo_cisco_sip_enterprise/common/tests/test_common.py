@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import os
 import xml.etree.ElementTree as ET
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from jinja2 import ChoiceLoader, DictLoader, Environment, FileSystemLoader
@@ -17,6 +17,7 @@ from ..common import (
     BaseCiscoSipEnterprisePlugin,
     BaseCiscoTFTPDeviceInfoExtractor,
     DeviceSupport,
+    version_stamp,
 )
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), '..', 'templates')
@@ -118,6 +119,33 @@ class TestPlugin:
     def test_dev_specific_filename(self, plugin):
         device = {'mac': 'cc:98:91:54:00:ba'}
         assert plugin._dev_specific_filename(device) == 'SEPCC98915400BA.cnf.xml'
+
+    def test_synchronize_sends_config_version_stamp(self, plugin, tmp_path):
+        plugin._tftpboot_dir = str(tmp_path)
+        device = {'mac': 'cc:98:91:54:00:ba', 'remote_state_sip_username': 'abcdef12'}
+        content = '<device><versionStamp>XX_VERSION_STAMP</versionStamp></device>'
+        config = tmp_path / 'SEPCC98915400BA.cnf.xml'
+        config.write_text(content)
+        plugin._stamp_config(str(config))
+        stamp = version_stamp(content)
+        assert f'<versionStamp>{stamp}</versionStamp>' in config.read_text()
+
+        with patch(f'{BaseCiscoSipEnterprisePlugin.__module__}.synchronize') as sync:
+            plugin.synchronize(device, {})
+
+        args = sync.standard_sip_synchronize.call_args[0]
+        assert args[0] is device
+        assert args[1] == 'service-control'
+        content_type, notify_content = args[2]
+        assert content_type == 'Content-Type=text/plain'
+        lines = notify_content.split('=', 1)[1].split('\r\n')
+        assert lines[0] == 'action=check-version'
+        assert lines[1] == 'RegisterCallId={}'
+        assert lines[2] == f'ConfigVersionStamp={{{stamp}}}'
+
+    def test_version_stamp_changes_with_content(self):
+        assert version_stamp('a') != version_stamp('b')
+        assert version_stamp('a') == version_stamp('a')
 
     def test_is_sensitive_filename(self, plugin):
         assert plugin.is_sensitive_filename('SEPCC98915400BA.cnf.xml')

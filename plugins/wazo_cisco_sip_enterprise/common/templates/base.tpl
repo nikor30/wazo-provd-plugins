@@ -142,6 +142,7 @@
   <backgroundImageAccess>true</backgroundImageAccess>
   <callLogBlfEnabled>2</callLogBlfEnabled>
  </commonProfile>
+ <versionStamp>XX_VERSION_STAMP</versionStamp>
  <loadInformation>{% block loadInformation %}{% endblock %}</loadInformation>
  <vendorConfig>
   <webAccess>0</webAccess>

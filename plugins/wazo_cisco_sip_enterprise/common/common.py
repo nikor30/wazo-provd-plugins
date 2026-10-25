@@ -11,9 +11,11 @@ TFTP with a CUCM style SEP<MAC>.cnf.xml file.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import re
+import uuid
 from operator import itemgetter
 from typing import TYPE_CHECKING
 from xml.sax.saxutils import escape
@@ -63,6 +65,40 @@ logger = logging.getLogger('plugin.wazo-cisco-sip-enterprise')
 FEATURE_ID_LINE = 9
 FEATURE_ID_SPEED_DIAL = 2
 FEATURE_ID_BLF_SPEED_DIAL = 21
+
+# Cisco "service-control" NOTIFY asking the phone to check its configuration
+# version (the phones ignore "check-sync" and reject the "apply-config" and
+# "restart" actions). The phone downloads its configuration file again when
+# ConfigVersionStamp differs from the <versionStamp> of the configuration it
+# runs, so every generated configuration gets a stamp derived from its content.
+SERVICE_CONTROL_EVENT = 'service-control'
+VERSION_STAMP_PLACEHOLDER = 'XX_VERSION_STAMP'
+_NULL_VERSION_STAMP = '00000000-0000-0000-0000-000000000000'
+_VERSION_STAMP_REGEX = re.compile(r'<versionStamp>([^<]*)</versionStamp>')
+
+
+def service_control_body(config_version_stamp: str) -> str:
+    return '\r\n'.join(
+        [
+            'action=check-version',
+            'RegisterCallId={}',
+            f'ConfigVersionStamp={{{config_version_stamp}}}',
+            f'DialplanVersionStamp={{{_NULL_VERSION_STAMP}}}',
+            f'SoftkeyVersionStamp={{{_NULL_VERSION_STAMP}}}',
+            f'FeatureControlVersionStamp={{{_NULL_VERSION_STAMP}}}',
+            'CUCMResult=config_applied',
+            'FirmwareLoadId=',
+            'LoadServer=',
+            'LogServer=',
+            'PPID=',
+            '',
+        ]
+    )
+
+
+def version_stamp(content: str) -> str:
+    return str(uuid.UUID(hashlib.sha1(content.encode('utf-8')).hexdigest()[:32]))
+
 
 # values of the <transportLayerProtocol> element
 TRANSPORT_TCP = 1
@@ -451,6 +487,26 @@ class BaseCiscoSipEnterprisePlugin(StandardPlugin):
 
         path = os.path.join(self._tftpboot_dir, filename)
         self._tpl_helper.dump(tpl, raw_config, path, self._ENCODING, errors='replace')
+        self._stamp_config(path)
+
+    def _stamp_config(self, path):
+        with open(path, encoding=self._ENCODING) as f:
+            content = f.read()
+        stamped = content.replace(VERSION_STAMP_PLACEHOLDER, version_stamp(content))
+        tmp_path = path + '.tmp'
+        with open(tmp_path, 'w', encoding=self._ENCODING) as f:
+            f.write(stamped)
+        os.rename(tmp_path, path)
+
+    def _config_version_stamp(self, device):
+        path = os.path.join(self._tftpboot_dir, self._dev_specific_filename(device))
+        try:
+            with open(path, encoding=self._ENCODING) as f:
+                m = _VERSION_STAMP_REGEX.search(f.read())
+        except OSError as e:
+            logger.info('error while reading configuration file: %s', e)
+            return _NULL_VERSION_STAMP
+        return m.group(1) if m else _NULL_VERSION_STAMP
 
     def deconfigure(self, device):
         path = os.path.join(self._tftpboot_dir, self._dev_specific_filename(device))
@@ -461,7 +517,12 @@ class BaseCiscoSipEnterprisePlugin(StandardPlugin):
             logger.info('error while removing file: %s', e)
 
     def synchronize(self, device, raw_config):
-        return synchronize.standard_sip_synchronize(device)
+        body = service_control_body(self._config_version_stamp(device))
+        return synchronize.standard_sip_synchronize(
+            device,
+            SERVICE_CONTROL_EVENT,
+            ['Content-Type=text/plain', f'Content={body}'],
+        )
 
     def get_remote_state_trigger_filename(self, device):
         if 'mac' not in device:
