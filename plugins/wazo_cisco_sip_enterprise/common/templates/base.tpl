@@ -130,6 +130,7 @@
    </line>
    {% endif -%}
    {% endfor -%}
+   {% block extra_lines %}{% endblock -%}
   </sipLines>
   <voipControlPort>5060</voipControlPort>
   <dscpForAudio>184</dscpForAudio>
@@ -173,13 +174,49 @@
  <deviceSecurityMode>1</deviceSecurityMode>
  <transportLayerProtocol>{{ XX_transport }}</transportLayerProtocol>
  <dndCallAlert>5</dndCallAlert>
- <idleTimeout>0</idleTimeout>
- <authenticationURL></authenticationURL>
+ <idleTimeout>{% block idle_timeout %}0{% endblock %}</idleTimeout>
+ <authenticationURL>{% block authentication_url %}{% endblock %}</authenticationURL>
  <directoryURL>{{ XX_xivo_phonebook_url|e }}</directoryURL>
- <idleURL></idleURL>
- <informationURL></informationURL>
+ <idleURL>{% block idle_url %}{% endblock %}</idleURL>
+ <informationURL>{% block information_url %}{% endblock %}</informationURL>
  <messagesURL></messagesURL>
  <proxyServerURL></proxyServerURL>
- <servicesURL></servicesURL>
+ <servicesURL>{% block services_url %}{% endblock %}</servicesURL>
  <encrConfig>false</encrConfig>
+ <phoneServices useHTTPS="false">
+  <provisioning>2</provisioning>
+  <phoneService type="1" category="0">
+   <name>Missed Calls</name>
+   <url>Application:Cisco/MissedCalls</url>
+   <vendor></vendor>
+   <version></version>
+  </phoneService>
+  <phoneService type="1" category="0">
+   <name>Received Calls</name>
+   <url>Application:Cisco/ReceivedCalls</url>
+   <vendor></vendor>
+   <version></version>
+  </phoneService>
+  <phoneService type="1" category="0">
+   <name>Placed Calls</name>
+   <url>Application:Cisco/PlacedCalls</url>
+   <vendor></vendor>
+   <version></version>
+  </phoneService>
+  {% if XX_xivo_phonebook_url -%}
+  <phoneService type="1" category="0">
+   <name>{{ XX_directory_name }}</name>
+   <url>{{ XX_xivo_phonebook_url|e }}</url>
+   <vendor></vendor>
+   <version></version>
+  </phoneService>
+  {% endif -%}
+  <phoneService type="2" category="0">
+   <name>Voicemail</name>
+   <url>Application:Cisco/Voicemail</url>
+   <vendor></vendor>
+   <version></version>
+  </phoneService>
+  {% block phone_services %}{% endblock -%}
+ </phoneServices>
 </device>

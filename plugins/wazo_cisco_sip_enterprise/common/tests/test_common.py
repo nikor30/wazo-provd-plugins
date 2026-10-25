@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 from unittest.mock import MagicMock
 
 import pytest
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import ChoiceLoader, DictLoader, Environment, FileSystemLoader
 
 from ..common import (
     BaseCiscoDHCPDeviceInfoExtractor,
@@ -202,7 +202,7 @@ class TestPlugin:
 
 
 class TestTemplate:
-    def render(self, plugin, raw_config):
+    def render(self, plugin, raw_config, template='base.tpl', env=None):
         plugin._add_locale(raw_config)
         plugin._add_timezone(raw_config)
         plugin._add_call_managers(raw_config)
@@ -210,8 +210,9 @@ class TestTemplate:
         plugin._add_dtmf(raw_config)
         plugin._add_buttons(raw_config, '8851')
         raw_config['XX_xivo_phonebook_url'] = 'http://192.168.10.60/a?b=1&c=2'
-        env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
-        return env.get_template('base.tpl').render(raw_config)
+        raw_config['XX_directory_name'] = 'Wazo Telefonbuch'
+        env = env or Environment(loader=FileSystemLoader(TEMPLATES_DIR))
+        return env.get_template(template).render(raw_config)
 
     def test_render_is_valid_xml(self, plugin, raw_config):
         raw_config['sip_lines']['1']['auth_username'] = ''
@@ -236,9 +237,44 @@ class TestTemplate:
         assert lines[2].findtext('featureID') == '21'
 
         assert root.find('addOnModules') is None
+        assert root.findtext('phoneServices/provisioning') == '2'
+        services = {
+            service.findtext('name'): (service.get('type'), service.findtext('url'))
+            for service in root.findall('phoneServices/phoneService')
+        }
+        assert services['Wazo Telefonbuch'] == ('1', 'http://192.168.10.60/a?b=1&c=2')
+        assert services['Voicemail'] == ('2', 'Application:Cisco/Voicemail')
         assert root.findtext('userLocale/name') == 'German_Germany'
         assert root.findtext('networkLocale') == 'Germany'
         assert root.findtext('directoryURL') == 'http://192.168.10.60/a?b=1&c=2'
         assert root.findtext('devicePool/dateTimeSetting/ntps/ntp/name') == (
             '192.168.10.1'
         )
+
+    def test_render_custom_template(self, plugin, raw_config):
+        custom = (
+            "{% extends 'base.tpl' %}"
+            "{% block services_url %}http://apps/services{% endblock %}"
+            "{% block idle_url %}http://apps/idle{% endblock %}"
+            "{% block idle_timeout %}300{% endblock %}"
+            "{% block authentication_url %}http://apps/auth{% endblock %}"
+            "{% block extra_lines %}<line button=\"9\"><featureID>20</featureID>"
+            "</line>{% endblock %}"
+        )
+        env = Environment(
+            loader=ChoiceLoader(
+                [DictLoader({'custom.tpl': custom}), FileSystemLoader(TEMPLATES_DIR)]
+            )
+        )
+        root = ET.fromstring(
+            self.render(plugin, raw_config, 'custom.tpl', env).encode('utf-8')
+        )
+
+        assert root.findtext('servicesURL') == 'http://apps/services'
+        assert root.findtext('idleURL') == 'http://apps/idle'
+        assert root.findtext('idleTimeout') == '300'
+        assert root.findtext('authenticationURL') == 'http://apps/auth'
+        buttons = [
+            line.get('button') for line in root.findall('sipProfile/sipLines/line')
+        ]
+        assert buttons == ['1', '2', '3', '9']

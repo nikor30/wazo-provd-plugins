@@ -250,6 +250,12 @@ class BaseCiscoSipEnterprisePlugin(StandardPlugin):
         'RTP-in-band': 'none',
         'SIP-INFO': 'avt_always',
     }
+    _DEFAULT_DIRECTORY_NAME = 'Wazo Directory'
+    _DIRECTORY_NAME = {
+        'de_DE': 'Wazo Telefonbuch',
+        'fr_FR': 'Répertoire Wazo',
+        'fr_CA': 'Répertoire Wazo',
+    }
     _SENSITIVE_FILENAME_REGEX = re.compile(r'^SEP[0-9A-F]{12}\.cnf\.xml$')
 
     def __init__(self, app, plugin_dir, gen_cfg, spec_cfg):
@@ -311,6 +317,9 @@ class BaseCiscoSipEnterprisePlugin(StandardPlugin):
 
     def _add_xivo_phonebook_url(self, raw_config):
         plugins.add_xivo_phonebook_url(raw_config, 'cisco', entry_point='menu')
+        raw_config['XX_directory_name'] = self._DIRECTORY_NAME.get(
+            raw_config.get('locale'), self._DEFAULT_DIRECTORY_NAME
+        )
 
     def _add_call_managers(self, raw_config):
         # The lines use the USECALLMANAGER proxy, i.e. they register to the
