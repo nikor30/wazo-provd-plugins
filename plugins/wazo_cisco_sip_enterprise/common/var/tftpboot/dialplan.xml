@@ -1,0 +1,8 @@
+<DIALTEMPLATE>
+ <!-- Wazo feature codes: *21, *98, *735... -->
+ <TEMPLATE MATCH="*.." TIMEOUT="3" />
+ <!-- internal extensions 1000-1999 (default Wazo user context range) -->
+ <TEMPLATE MATCH="1..." TIMEOUT="0" />
+ <!-- everything else -->
+ <TEMPLATE MATCH="*" TIMEOUT="5" />
+</DIALTEMPLATE>
