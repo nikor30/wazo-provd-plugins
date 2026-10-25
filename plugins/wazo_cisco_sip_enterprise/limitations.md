@@ -7,6 +7,9 @@ against Wazo 26.10.
 
 * Provisioning over TFTP (DHCP option 66 or 150), `SEP<MAC>.cnf.xml`
 * Registration, incoming and outgoing calls, audio in both directions
+* G.722 wideband audio (`advertiseG722Codec`); Asterisk puts the codec of the
+  other call leg first in its offer, so both legs must support G.722 (e.g. it
+  is disabled by default in Linphone for iOS)
 * Time zone, date and NTP
 * Key expansion module (CP-BEKEM), BLF and speed dial keys, directory (Contacts
   key), voicemail
