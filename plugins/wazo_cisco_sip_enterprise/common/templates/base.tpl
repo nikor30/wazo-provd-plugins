@@ -153,6 +153,7 @@
   <loggingDisplay>1</loggingDisplay>
   <g722CodecSupport>2</g722CodecSupport>
   <enableGroupListen>1</enableGroupListen>
+  <callParkMonitor>0</callParkMonitor>
  </vendorConfig>
  <advertiseG722Codec>1</advertiseG722Codec>
  {% if XX_addons -%}

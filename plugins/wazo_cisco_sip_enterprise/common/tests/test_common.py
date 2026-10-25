@@ -266,6 +266,7 @@ class TestTemplate:
 
         assert root.find('addOnModules') is None
         assert root.findtext('advertiseG722Codec') == '1'
+        assert root.findtext('vendorConfig/callParkMonitor') == '0'
         assert root.findtext('phoneServices/provisioning') == '2'
         services = {
             service.findtext('name'): (service.get('type'), service.findtext('url'))

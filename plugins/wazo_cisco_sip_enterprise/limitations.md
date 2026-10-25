@@ -11,6 +11,10 @@ against Wazo 26.10.
   other call leg first in its offer, so both legs must support G.722 (e.g. it
   is disabled by default in Linphone for iOS)
 * Time zone, date and NTP
+* Hold/resume (re-INVITE sendonly/sendrecv), several calls per line, DTMF.
+  `callParkMonitor` must be 0: otherwise the hold key sends a CUCM-only
+  `x-cisco-remotecc` REFER (softkeyevent ParkMonitor), Asterisk answers 501 and
+  the call is not put on hold
 * Key expansion module (CP-BEKEM), BLF and speed dial keys, directory (Contacts
   key), voicemail
 
