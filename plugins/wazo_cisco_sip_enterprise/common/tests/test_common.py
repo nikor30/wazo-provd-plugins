@@ -258,6 +258,8 @@ class TestTemplate:
             "{% block idle_url %}http://apps/idle{% endblock %}"
             "{% block idle_timeout %}300{% endblock %}"
             "{% block authentication_url %}http://apps/auth{% endblock %}"
+            "{% block phone_label %}Niko{% endblock %}"
+            "{% block line_label %}Niko {{ button['label'] }}{% endblock %}"
             "{% block extra_lines %}<line button=\"9\"><featureID>20</featureID>"
             "</line>{% endblock %}"
         )
@@ -274,6 +276,10 @@ class TestTemplate:
         assert root.findtext('idleURL') == 'http://apps/idle'
         assert root.findtext('idleTimeout') == '300'
         assert root.findtext('authenticationURL') == 'http://apps/auth'
+        assert root.findtext('sipProfile/phoneLabel') == 'Niko'
+        line = root.find('sipProfile/sipLines/line')
+        assert line is not None
+        assert line.findtext('featureLabel') == 'Niko 1001'
         buttons = [
             line.get('button') for line in root.findall('sipProfile/sipLines/line')
         ]

@@ -87,7 +87,7 @@
   <dtmfDbLevel>3</dtmfDbLevel>
   <dtmfOutofBand>{{ XX_dtmf_out_of_band }}</dtmfOutofBand>
   <kpml>0</kpml>
-  <phoneLabel>Wazo</phoneLabel>
+  <phoneLabel>{% block phone_label %}Wazo{% endblock %}</phoneLabel>
   <stutterMsgWaiting>1</stutterMsgWaiting>
   <callStats>false</callStats>
   <offhookToFirstDigitTimer>15000</offhookToFirstDigitTimer>
@@ -101,7 +101,7 @@
    {% set line = button['line'] -%}
    <line button="{{ button_no }}" lineIndex="{{ button['line_index'] }}">
     <featureID>9</featureID>
-    <featureLabel>{{ button['label'] }}</featureLabel>
+    <featureLabel>{% block line_label scoped %}{{ button['label'] }}{% endblock %}</featureLabel>
     <proxy>USECALLMANAGER</proxy>
     <port>{{ XX_call_managers[0]['port'] }}</port>
     <name>{{ line['username']|e }}</name>
