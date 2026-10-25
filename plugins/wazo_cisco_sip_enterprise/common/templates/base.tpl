@@ -152,6 +152,17 @@
   <g722CodecSupport>2</g722CodecSupport>
   <enableGroupListen>1</enableGroupListen>
  </vendorConfig>
+ {% if XX_addons -%}
+ <addOnModules>
+  {% for addon in XX_addons -%}
+  <addOnModule idx="{{ addon['idx'] }}">
+   <deviceType>{{ addon['type'] }}</deviceType>
+   <deviceLine>{{ addon['lines'] }}</deviceLine>
+   <loadInformation></loadInformation>
+  </addOnModule>
+  {% endfor -%}
+ </addOnModules>
+ {% endif -%}
  {% if XX_locale -%}
  <userLocale>
   <name>{{ XX_locale[0] }}</name>

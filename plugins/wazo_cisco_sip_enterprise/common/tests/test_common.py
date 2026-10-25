@@ -139,11 +139,36 @@ class TestPlugin:
 
         assert [no for no, _ in raw_config['XX_buttons']] == [1]
 
+    def test_buttons_no_expansion_module(self, plugin, raw_config):
+        plugin._add_buttons(raw_config, '8851')
+
+        assert raw_config['XX_addons'] == []
+
+    def test_buttons_on_expansion_modules(self, plugin, raw_config):
+        raw_config['funckeys'] = {
+            '6': {'type': 'speeddial', 'value': '1002'},
+            '42': {'type': 'blf', 'value': '1003'},
+        }
+        plugin._add_buttons(raw_config, '8851')
+
+        assert [no for no, _ in raw_config['XX_buttons']] == [1, 6, 42]
+        assert raw_config['XX_addons'] == [
+            {'idx': 1, 'type': 'BEKEM', 'lines': 36},
+            {'idx': 2, 'type': 'BEKEM', 'lines': 36},
+        ]
+
     def test_buttons_more_than_model(self, plugin, raw_config):
-        raw_config['funckeys'] = {'6': {'type': 'speeddial', 'value': '1002'}}
+        raw_config['funckeys'] = {'78': {'type': 'speeddial', 'value': '1002'}}
         plugin._add_buttons(raw_config, '8851')
 
         assert [no for no, _ in raw_config['XX_buttons']] == [1]
+
+    def test_buttons_model_without_expansion_module(self, plugin, raw_config):
+        raw_config['funckeys'] = {'6': {'type': 'speeddial', 'value': '1002'}}
+        plugin._add_buttons(raw_config, '8841')
+
+        assert [no for no, _ in raw_config['XX_buttons']] == [1]
+        assert raw_config['XX_addons'] == []
 
     def test_timezone(self, plugin, raw_config):
         plugin._add_timezone(raw_config)
@@ -210,6 +235,7 @@ class TestTemplate:
         assert lines[1].findtext('speedDialNumber') == '1002'
         assert lines[2].findtext('featureID') == '21'
 
+        assert root.find('addOnModules') is None
         assert root.findtext('userLocale/name') == 'German_Germany'
         assert root.findtext('networkLocale') == 'Germany'
         assert root.findtext('directoryURL') == 'http://192.168.10.60/a?b=1&c=2'

@@ -237,6 +237,14 @@ class BaseCiscoSipEnterprisePlugin(StandardPlugin):
         '8861': 5,
         '8865': 5,
     }
+    _NB_EXPANSION_MODULES = {
+        # <model>: max number of expansion modules
+        '8851': 2,
+        '8861': 3,
+        '8865': 3,
+    }
+    # (deviceType, number of buttons) of the 8800 key expansion module
+    _EXPANSION_MODULE = ('BEKEM', 36)
     _DTMF_OUT_OF_BAND = {
         'RTP-out-of-band': 'avt',
         'RTP-in-band': 'none',
@@ -347,7 +355,9 @@ class BaseCiscoSipEnterprisePlugin(StandardPlugin):
         """Build the list of <line> buttons: SIP lines first, then funckeys.
 
         Funckeys keep their position as button number. A funckey whose position
-        is already taken by a SIP line is ignored.
+        is already taken by a SIP line is ignored. Positions after the phone's
+        own buttons are on the key expansion modules, which are declared as
+        needed.
         """
         buttons: dict[int, dict[str, Any]] = {}
         for line_no, line in sorted(
@@ -361,6 +371,11 @@ class BaseCiscoSipEnterprisePlugin(StandardPlugin):
             }
 
         nb_buttons = self._NB_BUTTONS.get(model)
+        module_type, nb_module_buttons = self._EXPANSION_MODULE
+        nb_modules = self._NB_EXPANSION_MODULES.get(model, 0)
+        max_button = None
+        if nb_buttons is not None:
+            max_button = nb_buttons + nb_modules * nb_module_buttons
         for funckey_no, funckey in sorted(
             raw_config['funckeys'].items(), key=itemgetter(0)
         ):
@@ -368,7 +383,7 @@ class BaseCiscoSipEnterprisePlugin(StandardPlugin):
             if button_no in buttons:
                 logger.info('Funckey %s is hidden by a SIP line', funckey_no)
                 continue
-            if nb_buttons is not None and button_no > nb_buttons:
+            if max_button is not None and button_no > max_button:
                 logger.info(
                     'Model %s has less than %s programmable buttons', model, button_no
                 )
@@ -388,6 +403,15 @@ class BaseCiscoSipEnterprisePlugin(StandardPlugin):
                 'label': escape(funckey.get('label') or value),
             }
         raw_config['XX_buttons'] = sorted(buttons.items())
+
+        addons = []
+        if nb_buttons is not None and buttons and max(buttons) > nb_buttons:
+            nb_used_modules = -(-(max(buttons) - nb_buttons) // nb_module_buttons)
+            addons = [
+                {'idx': idx, 'type': module_type, 'lines': nb_module_buttons}
+                for idx in range(1, nb_used_modules + 1)
+            ]
+        raw_config['XX_addons'] = addons
 
     def _dev_specific_filename(self, device: dict[str, str]) -> str:
         # Return the device specific filename (not pathname) of device
