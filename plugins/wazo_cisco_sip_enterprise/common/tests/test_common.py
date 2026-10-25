@@ -265,6 +265,7 @@ class TestTemplate:
         assert lines[2].findtext('featureID') == '21'
 
         assert root.find('addOnModules') is None
+        assert root.findtext('advertiseG722Codec') == '1'
         assert root.findtext('phoneServices/provisioning') == '2'
         services = {
             service.findtext('name'): (service.get('type'), service.findtext('url'))

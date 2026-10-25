@@ -154,6 +154,7 @@
   <g722CodecSupport>2</g722CodecSupport>
   <enableGroupListen>1</enableGroupListen>
  </vendorConfig>
+ <advertiseG722Codec>1</advertiseG722Codec>
  {% if XX_addons -%}
  <addOnModules>
   {% for addon in XX_addons -%}
