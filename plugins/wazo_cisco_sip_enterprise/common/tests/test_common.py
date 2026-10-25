@@ -202,6 +202,14 @@ class TestPlugin:
         plugin._add_timezone(raw_config)
         assert raw_config['XX_timezone'] == 'W. Europe Standard/Daylight Time'
 
+    def test_date_template(self, plugin, raw_config):
+        plugin._add_locale(raw_config)
+        assert raw_config['XX_date_template'] == 'D.M.Y'
+
+        raw_config['locale'] = 'en_US'
+        plugin._add_locale(raw_config)
+        assert raw_config['XX_date_template'] == 'M/D/YA'
+
     def test_transport(self, plugin, raw_config):
         plugin._add_transport(raw_config)
         assert raw_config['XX_transport'] == 2
@@ -266,6 +274,7 @@ class TestTemplate:
 
         assert root.find('addOnModules') is None
         assert root.findtext('advertiseG722Codec') == '1'
+        assert root.findtext('devicePool/dateTimeSetting/dateTemplate') == 'D.M.Y'
         assert root.findtext('vendorConfig/callParkMonitor') == '0'
         assert root.findtext('phoneServices/provisioning') == '2'
         services = {

@@ -286,6 +286,11 @@ class BaseCiscoSipEnterprisePlugin(StandardPlugin):
         'RTP-in-band': 'none',
         'SIP-INFO': 'avt_always',
     }
+    # <dateTemplate>: a trailing A selects the 12 hour clock
+    _DEFAULT_DATE_TEMPLATE = 'D.M.Y'
+    _DATE_TEMPLATE = {
+        'en_US': 'M/D/YA',
+    }
     _DEFAULT_DIRECTORY_NAME = 'Wazo Directory'
     _DIRECTORY_NAME = {
         'de_DE': 'Wazo Telefonbuch',
@@ -315,6 +320,9 @@ class BaseCiscoSipEnterprisePlugin(StandardPlugin):
         locale = raw_config.get('locale')
         if locale in self._LOCALE:
             raw_config['XX_locale'] = self._LOCALE[locale]
+        raw_config['XX_date_template'] = self._DATE_TEMPLATE.get(
+            locale, self._DEFAULT_DATE_TEMPLATE
+        )
 
     def _tzinfo_to_value(self, tzinfo):
         utcoffset_m = tzinfo['utcoffset'].as_minutes

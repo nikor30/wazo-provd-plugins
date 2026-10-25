@@ -9,7 +9,7 @@
   <name>Wazo</name>
   <dateTimeSetting>
    <name>Wazo</name>
-   <dateTemplate>D.M.YA</dateTemplate>
+   <dateTemplate>{{ XX_date_template }}</dateTemplate>
    <timeZone>{{ XX_timezone }}</timeZone>
    <ntps>
     {% if ntp_enabled -%}
