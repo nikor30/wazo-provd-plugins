@@ -20,6 +20,10 @@ against Wazo 26.10.
 
 ## Known issues
 
+* Conference does not work: the phones do not mix audio locally, the
+  conference key sends a CUCM-only `x-cisco-remotecc` REFER (softkeyevent
+  Conference) that Asterisk answers with 501. Transfer (REFER with Replaces)
+  works.
 * Resynchronization is not reliable. The phones answer the usual `check-sync`
   NOTIFY with 200 but ignore it. The plugin sends a Cisco `service-control`
   NOTIFY (`action=check-version`, empty `RegisterCallId`, `ConfigVersionStamp`
